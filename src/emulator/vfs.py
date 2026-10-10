@@ -16,6 +16,9 @@ import zlib
 SEPARATOR = "/"
 CURRENT_DIR = "."
 PARENT_DIR = ".."
+HOME = "~"
+NO_SUCH_FILE = "No such file or directory"
+NOT_A_DIRECTORY = "Not a directory"
 ARCHIVE_ERRORS = (zipfile.BadZipFile, zlib.error, NotImplementedError,
                   RuntimeError, ValueError, EOFError)
 
@@ -102,6 +105,47 @@ class Vfs:
                     f"vfs: invalid format: '{part}' is not a directory")
             node = child
         return node
+
+    def get_node(self, parts):
+        """Вернуть узел по абсолютному пути (списку имён).
+
+        Если путь не существует или проходит через файл, выбрасывается
+        VfsError с текстом в стиле UNIX.
+        """
+        node = self.root
+        for name in parts:
+            if not node.is_dir:
+                raise VfsError(NOT_A_DIRECTORY)
+            node = node.children.get(name)
+            if node is None:
+                raise VfsError(NO_SUCH_FILE)
+        return node
+
+
+def resolve_parts(cwd, path):
+    """Вычислить абсолютный путь (список имён) для ``path``.
+
+    ``cwd`` — текущий каталог (список имён). Поддерживаются абсолютные
+    пути (``/a/b``), домашний каталог (``~``, ``~/a``; это корень VFS),
+    относительные пути, а также ``.`` и ``..``.
+    """
+    if path == HOME or path.startswith(HOME + SEPARATOR):
+        parts, path = [], path[len(HOME):]
+    elif path.startswith(SEPARATOR):
+        parts = []
+    else:
+        parts = list(cwd)
+    for name in path.split(SEPARATOR):
+        if name == PARENT_DIR and parts:
+            parts.pop()
+        elif name not in ("", CURRENT_DIR, PARENT_DIR):
+            parts.append(name)
+    return parts
+
+
+def display_path(parts):
+    """Представить путь для приглашения: ``~`` или ``~/a/b``."""
+    return SEPARATOR.join([HOME, *parts])
 
 
 def split_entry_name(name):

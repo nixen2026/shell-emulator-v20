@@ -69,24 +69,25 @@ class ScriptTest(unittest.TestCase):
 
     def test_echo_input_and_output(self):
         """Скрипт отображает приглашение, ввод и вывод."""
-        shell = self.run_script_text("# comment\n\nls a\n")
-        expected = f"{shell.prompt()}ls a\nls: args=['a']\n"
+        shell = self.run_script_text("# comment\n\nconf-dump # x\n")
+        expected = (f"{shell.prompt()}conf-dump # x\n"
+                    f"vfs={NOT_SET}\nscript={NOT_SET}\n")
         self.assertEqual(shell.out.getvalue(), expected)
 
     def test_error_reported_with_line(self):
         """Ошибка в скрипте сообщается с номером строки."""
-        shell = self.run_script_text("ls\nbad\nls\n")
+        shell = self.run_script_text("conf-dump\nbad\nconf-dump\n")
         err = shell.err.getvalue()
         self.assertIn("bad: command not found", err)
         self.assertIn(":2: error: command exited with status 127", err)
-        self.assertEqual(shell.out.getvalue().count("ls: args"), 2)
+        self.assertEqual(shell.out.getvalue().count("vfs="), 2)
 
     def test_exit_stops_script(self):
         """exit в скрипте прекращает его выполнение."""
-        shell = self.run_script_text("exit 4\nls\n")
+        shell = self.run_script_text("exit 4\nconf-dump\n")
         self.assertFalse(shell.running)
         self.assertEqual(shell.exit_code, 4)
-        self.assertNotIn("ls: args", shell.out.getvalue())
+        self.assertNotIn("vfs=", shell.out.getvalue())
 
     def test_missing_script(self):
         """Отсутствующий файл скрипта — ошибка."""

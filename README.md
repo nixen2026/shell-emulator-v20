@@ -18,6 +18,8 @@ Python 3.8+.
 3. **VFS** — виртуальная файловая система из ZIP-архива (двоичного или
    в текстовом формате base64), хранится только в памяти; служебная
    команда `vfs-info`.
+4. **Основные команды** — логика `ls` и `cd` по VFS, команды `clear`
+   и `uname`; приглашение показывает текущий каталог VFS.
 
 ## 2. Функции и настройки
 
@@ -35,13 +37,40 @@ Python 3.8+.
 
 ### Команды
 
-| Команда       | Описание                                                    |
-|---------------|-------------------------------------------------------------|
-| `ls [арг...]` | Заглушка: выводит `ls: args=[...]`                          |
-| `cd [арг...]` | Заглушка: выводит `cd: args=[...]`                          |
-| `exit [код]`  | Выход с кодом; без аргумента — код последней команды        |
-| `conf-dump`   | Вывод параметров эмулятора в формате `ключ=значение`        |
-| `vfs-info`    | Имя загруженной VFS и хеш SHA-256 её данных                 |
+| Команда              | Описание                                             |
+|----------------------|------------------------------------------------------|
+| `ls [-l] [путь...]`  | Содержимое каталогов VFS                             |
+| `cd [путь]`          | Смена текущего каталога VFS                          |
+| `clear`              | Очистка экрана терминала                             |
+| `uname [-asnrvm]`    | Сведения о реальной ОС                               |
+| `exit [код]`         | Выход с кодом; без аргумента — код последней команды |
+| `conf-dump`          | Параметры эмулятора в формате `ключ=значение`        |
+| `vfs-info`           | Имя загруженной VFS и хеш SHA-256 её данных          |
+
+Пути в командах: абсолютные (`/docs/notes`), относительные
+(`notes/archive`), от домашнего каталога (`~`, `~/src`; домашний
+каталог — корень VFS), а также `.` и `..`.
+
+**ls** — без путей выводит текущий каталог; для каталога — его
+элементы (по алфавиту, через два пробела), для файла — его путь.
+При нескольких путях сначала выводятся файлы, затем каждый каталог
+с заголовком `путь:`. Опция `-l` — длинный формат: тип (`d` — каталог,
+`-` — файл), размер (байты файла или число элементов каталога), имя.
+Несуществующий путь: `ls: cannot access 'x': No such file or directory`
+(остальные пути выводятся, код 1).
+
+**cd** — без аргумента и `cd ~` переходит в домашний каталог (корень
+VFS), `cd -` — в предыдущий каталог (с выводом его пути). Ошибки:
+`cd: x: No such file or directory`, `cd: x: Not a directory`,
+`cd: too many arguments`.
+
+**clear** — очищает экран ANSI-последовательностью (в консоли Windows
+поддержка ANSI включается автоматически).
+
+**uname** — сведения о реальной ОС: `-s` имя ядра (по умолчанию),
+`-n` имя узла сети, `-r` выпуск, `-v` версия, `-m` архитектура,
+`-a` всё сразу. Опции можно объединять (`-sr`). Ошибки:
+`uname: invalid option -- 'x'`, `uname: extra operand 'foo'`.
 
 ### Стартовый скрипт
 
@@ -88,8 +117,10 @@ src/emulator/      исходный код
   shell.py         приглашение, выполнение команд и скриптов, REPL
   parser.py        разбор строки: комментарии, команда, аргументы
   config.py        параметры командной строки
-  vfs.py           VFS: загрузка ZIP в память, дерево каталогов
-  commands.py      встроенные команды
+  vfs.py           VFS: загрузка ZIP в память, дерево, пути
+  commands.py      реестр команд, exit, conf-dump, vfs-info, clear, uname
+  fs_commands.py   команды работы с VFS: ls, cd
+  terminal.py      очистка экрана терминала
   errors.py        исключения ShellError и ExitRequest
 tests/             модульные тесты (unittest)
 scripts/startup/   стартовые скрипты эмулятора
@@ -138,52 +169,73 @@ python scripts/make_vfs.py
 | `scripts/os/test_params.sh`    | `scripts\os\test_params.bat`    |
 | `scripts/os/test_startup.sh`   | `scripts\os\test_startup.bat`   |
 | `scripts/os/test_vfs.sh`       | `scripts\os\test_vfs.bat`       |
+| `scripts/os/test_commands.sh`  | `scripts\os\test_commands.bat`  |
+
+Стартовые скрипты эмулятора (`scripts/startup`): `stage2.txt`,
+`comments_only.txt`, `stage3.txt`, `stage4.txt` — по одному на этап,
+с примерами всех режимов команд и обработки ошибок.
 
 ## 4. Примеры использования
 
-Интерактивный режим:
+Интерактивный режим с VFS из нескольких уровней:
 
 ```
-$ ./run.sh
-[debug] vfs=<not set>
+$ python scripts/make_vfs.py
+$ ./run.sh --vfs build/vfs/deep.zip
+[debug] vfs=build/vfs/deep.zip
 [debug] script=<not set>
-nixen@Egorei:~$ ls -l /home
-ls: args=['-l', '/home']
-nixen@Egorei:~$ cd docs   # комментарий
-cd: args=['docs']
-nixen@Egorei:~$ foo bar
+nixen@Egorei:~$ vfs-info
+name: deep.zip
+sha256: 3a078ed864f02c2fc5bd780b6713d2e187b1ce52721bfa19b8ff00a346c11a69
+nixen@Egorei:~$ ls
+README.txt  docs  empty  images  src
+nixen@Egorei:~$ ls -l docs
+-       24 guide.txt
+d        2 notes
+nixen@Egorei:~$ cd docs/notes
+nixen@Egorei:~/docs/notes$ ls
+archive  todo.txt
+nixen@Egorei:~/docs/notes$ cd archive/2025
+nixen@Egorei:~/docs/notes/archive/2025$ cd -
+~/docs/notes
+nixen@Egorei:~/docs/notes$ cd ../README.txt
+cd: ../README.txt: No such file or directory
+nixen@Egorei:~/docs/notes$ uname -a
+Windows Egorei 11 10.0.26200 AMD64
+nixen@Egorei:~/docs/notes$ foo
 foo: command not found
-nixen@Egorei:~$ exit abc
-exit: abc: numeric argument required
-nixen@Egorei:~$ exit 5
+nixen@Egorei:~/docs/notes$ exit 3
 $ echo $?
-5
+3
 ```
 
-Стартовый скрипт `scripts/startup/stage2.txt`:
+Стартовый скрипт с комментариями и ошибками
+(`scripts/startup/stage2.txt`):
 
 ```
-$ ./run.sh --vfs my.zip --script scripts/startup/stage2.txt
-[debug] vfs=my.zip
+$ ./run.sh --script scripts/startup/stage2.txt
+[debug] vfs=<not set>
 [debug] script=scripts/startup/stage2.txt
 nixen@Egorei:~$ conf-dump
-vfs=my.zip
+vfs=<not set>
 script=scripts/startup/stage2.txt
-nixen@Egorei:~$ ls -l /home   # комментарий в конце строки
-ls: args=['-l', '/home']
-nixen@Egorei:~$ cd docs
-cd: args=['docs']
+nixen@Egorei:~$ cd ~   # комментарий в конце строки
 nixen@Egorei:~$ unknown-command arg
 unknown-command: command not found
-scripts/startup/stage2.txt:12: error: command exited with status 127
+scripts/startup/stage2.txt:11: error: command exited with status 127
 nixen@Egorei:~$ conf-dump extra
 conf-dump: too many arguments
+scripts/startup/stage2.txt:12: error: command exited with status 1
+nixen@Egorei:~$ exit abc
+exit: abc: numeric argument required
 scripts/startup/stage2.txt:13: error: command exited with status 1
-...
+nixen@Egorei:~$ exit 1 2
+exit: too many arguments
+scripts/startup/stage2.txt:14: error: command exited with status 1
 nixen@Egorei:~$ exit 0
 ```
 
-Информация о VFS и ошибка формата:
+VFS в формате base64 и ошибки загрузки VFS:
 
 ```
 $ ./run.sh --vfs build/vfs/deep.b64
@@ -197,4 +249,15 @@ $ ./run.sh --vfs build/vfs/broken.zip
 [debug] vfs=build/vfs/broken.zip
 [debug] script=<not set>
 vfs: invalid format: expected a ZIP archive or base64 ZIP
+$ ./run.sh --vfs build/vfs/no_such.zip
+[debug] vfs=build/vfs/no_such.zip
+[debug] script=<not set>
+vfs: file not found: build/vfs/no_such.zip
+```
+
+Полные демонстрации всех команд каждого этапа:
+
+```bash
+./scripts/os/test_vfs.sh
+./scripts/os/test_commands.sh
 ```

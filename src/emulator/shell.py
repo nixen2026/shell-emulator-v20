@@ -6,13 +6,11 @@ import sys
 
 from emulator.commands import COMMANDS
 from emulator.config import Config
-from emulator.errors import ExitRequest, ShellError
+from emulator.errors import (EXIT_FAILURE, EXIT_NOT_FOUND, EXIT_SUCCESS,
+                             ExitRequest, ShellError)
 from emulator.parser import parse_line
-from emulator.vfs import Vfs
+from emulator.vfs import Vfs, display_path, resolve_parts
 
-EXIT_SUCCESS = 0
-EXIT_FAILURE = 1
-EXIT_NOT_FOUND = 127
 DEFAULT_USERNAME = "user"
 
 
@@ -41,10 +39,23 @@ class Shell:
         self.status = EXIT_SUCCESS
         self.running = True
         self.exit_code = EXIT_SUCCESS
+        self.cwd = []
+        self.old_cwd = []
 
     def prompt(self):
-        """Сформировать приглашение вида ``username@hostname:~$``."""
-        return f"{self.username}@{self.hostname}:~$ "
+        """Сформировать приглашение вида ``username@hostname:~/путь$``.
+
+        Домашний каталог ``~`` соответствует корню VFS.
+        """
+        return f"{self.username}@{self.hostname}:{display_path(self.cwd)}$ "
+
+    def resolve(self, path):
+        """Вернуть абсолютный путь VFS (список имён) для ``path``."""
+        return resolve_parts(self.cwd, path)
+
+    def lookup(self, path):
+        """Вернуть узел VFS по пути ``path`` или выбросить VfsError."""
+        return self.vfs.get_node(self.resolve(path))
 
     def write(self, text):
         """Вывести строку в стандартный поток вывода."""
@@ -68,8 +79,7 @@ class Shell:
             self.status = EXIT_NOT_FOUND
             return self.status
         try:
-            command(self, args)
-            self.status = EXIT_SUCCESS
+            self.status = command(self, args) or EXIT_SUCCESS
         except ShellError as exc:
             self.error(str(exc))
             self.status = EXIT_FAILURE

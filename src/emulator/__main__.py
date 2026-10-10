@@ -3,7 +3,8 @@
 import sys
 
 from emulator.config import parse_args
-from emulator.shell import EXIT_FAILURE, Shell
+from emulator.errors import EXIT_FAILURE
+from emulator.shell import Shell
 from emulator.vfs import Vfs, VfsError, load_vfs
 
 

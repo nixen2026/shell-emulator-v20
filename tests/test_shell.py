@@ -18,20 +18,6 @@ class PromptTest(unittest.TestCase):
         self.assertEqual(shell.prompt(), expected)
 
 
-class StubCommandsTest(unittest.TestCase):
-    """Команды-заглушки выводят имя и аргументы."""
-
-    def test_ls_stub(self):
-        """ls выводит своё имя и аргументы."""
-        out, _ = run_lines(make_shell(), "ls -l /tmp")
-        self.assertEqual(out, "ls: args=['-l', '/tmp']\n")
-
-    def test_cd_stub_without_args(self):
-        """cd без аргументов выводит пустой список."""
-        out, _ = run_lines(make_shell(), "cd")
-        self.assertEqual(out, "cd: args=[]\n")
-
-
 class ErrorsTest(unittest.TestCase):
     """Обработка ошибок ввода."""
 
