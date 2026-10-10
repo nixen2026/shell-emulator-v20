@@ -1,0 +1,53 @@
+# Стартовый скрипт этапа 5: rm и mv (изменения VFS только в памяти).
+# Запуск: run.sh --vfs build/vfs/deep.zip --script scripts/startup/stage5.txt
+
+vfs-info
+ls -l
+
+# --- rm: все режимы
+rm README.txt               # удаление файла
+rm src/main.py images/logo.bin   # несколько файлов
+ls src images
+rm -r docs/notes/archive    # каталог с содержимым (3 уровня)
+ls docs/notes
+rm -f no_such_file          # -f: нет ошибки для несуществующего пути
+rm -rf empty                # объединённые опции
+ls
+
+# --- mv: все режимы
+mv docs/guide.txt docs/manual.txt     # переименование файла
+ls docs
+mv docs/manual.txt src                # перемещение файла в каталог
+mv docs/notes/todo.txt src/lib ~/docs # несколько источников в каталог
+ls -l src docs
+cd docs/notes
+mv /docs /manuals                     # каталог с текущим: приглашение меняется
+cd ~
+mv src/manual.txt manuals/todo.txt    # замена существующего файла
+ls -l manuals manuals/lib
+
+# --- обработка ошибок rm
+rm                          # нет операндов
+rm no_such_file             # нет такого файла
+rm manuals                  # каталог без -r
+rm -r /                     # корень удалить нельзя
+rm -x manuals               # неизвестная опция
+cd manuals/notes
+rm -r ..                    # каталог, содержащий текущий
+cd ~
+
+# --- обработка ошибок mv
+mv                          # нет операндов
+mv manuals                  # нет назначения
+mv no_such_file x           # нет источника
+mv manuals manuals/notes    # в собственный подкаталог
+mv manuals/todo.txt manuals/todo.txt  # тот же файл
+mv manuals/todo.txt no/such/path      # нет каталога назначения
+mv manuals/todo.txt src manuals/notes/x  # несколько источников, цель не каталог
+mv images manuals/todo.txt            # каталог на место файла
+mv images notes                       # переименование каталога (успешно)
+mv notes manuals                      # manuals/notes уже есть: замена каталога
+
+# Исходный архив VFS не изменился: хеш тот же
+vfs-info
+exit 0

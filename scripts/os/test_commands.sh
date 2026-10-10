@@ -10,3 +10,10 @@ STARTUP="$ROOT_DIR/scripts/startup"
 echo "=== Stage 4: ls, cd, clear, uname ==="
 "$RUN" --vfs "$VFS_DIR/deep.zip" --script "$STARTUP/stage4.txt"
 echo "exit code: $?"
+
+echo "=== Stage 5: rm, mv ==="
+"$RUN" --vfs "$VFS_DIR/deep.zip" --script "$STARTUP/stage5.txt"
+echo "exit code: $?"
+
+echo "=== Stage 5: the VFS archive on disk is not modified ==="
+echo "ls" | "$RUN" --vfs "$VFS_DIR/deep.zip"

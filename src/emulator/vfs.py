@@ -121,6 +121,45 @@ class Vfs:
                 raise VfsError(NO_SUCH_FILE)
         return node
 
+    def find(self, parts):
+        """Вернуть узел по абсолютному пути или None, если его нет."""
+        try:
+            return self.get_node(parts)
+        except VfsError:
+            return None
+
+    def detach(self, parts):
+        """Убрать узел по пути из родительского каталога и вернуть его.
+
+        Изменение выполняется только в памяти.
+        """
+        parent = self.get_node(parts[:-1])
+        return parent.children.pop(parts[-1])
+
+    def attach(self, parts, node):
+        """Поместить узел ``node`` по пути ``parts`` под последним именем.
+
+        Существующий узел с тем же именем заменяется. Изменение
+        выполняется только в памяти.
+        """
+        parent = self.get_node(parts[:-1])
+        if not parent.is_dir:
+            raise VfsError(NOT_A_DIRECTORY)
+        node.name = parts[-1]
+        parent.children[node.name] = node
+
+
+def is_prefix(prefix, parts):
+    """Проверить, что путь ``prefix`` совпадает с началом ``parts``."""
+    return parts[:len(prefix)] == prefix
+
+
+def replace_prefix(parts, old, new):
+    """Заменить начало ``old`` пути ``parts`` на ``new``, если оно есть."""
+    if is_prefix(old, parts):
+        return new + parts[len(old):]
+    return parts
+
 
 def resolve_parts(cwd, path):
     """Вычислить абсолютный путь (список имён) для ``path``.

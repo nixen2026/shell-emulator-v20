@@ -8,6 +8,7 @@
 
 import platform
 
+from emulator.edit_commands import cmd_mv, cmd_rm
 from emulator.errors import ExitRequest, ShellError
 from emulator.fs_commands import cmd_cd, cmd_ls
 from emulator.parser import parse_options
@@ -98,4 +99,6 @@ COMMANDS = {
     "vfs-info": cmd_vfs_info,
     "clear": cmd_clear,
     "uname": cmd_uname,
+    "rm": cmd_rm,
+    "mv": cmd_mv,
 }

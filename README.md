@@ -20,6 +20,8 @@ Python 3.8+.
    команда `vfs-info`.
 4. **Основные команды** — логика `ls` и `cd` по VFS, команды `clear`
    и `uname`; приглашение показывает текущий каталог VFS.
+5. **Дополнительные команды** — `rm` и `mv`, изменяющие VFS только
+   в памяти.
 
 ## 2. Функции и настройки
 
@@ -43,6 +45,8 @@ Python 3.8+.
 | `cd [путь]`          | Смена текущего каталога VFS                          |
 | `clear`              | Очистка экрана терминала                             |
 | `uname [-asnrvm]`    | Сведения о реальной ОС                               |
+| `rm [-rf] путь...`   | Удаление файлов и каталогов VFS (в памяти)           |
+| `mv ист... назнач`   | Перемещение и переименование в VFS (в памяти)        |
 | `exit [код]`         | Выход с кодом; без аргумента — код последней команды |
 | `conf-dump`          | Параметры эмулятора в формате `ключ=значение`        |
 | `vfs-info`           | Имя загруженной VFS и хеш SHA-256 её данных          |
@@ -71,6 +75,30 @@ VFS), `cd -` — в предыдущий каталог (с выводом ег�
 `-n` имя узла сети, `-r` выпуск, `-v` версия, `-m` архитектура,
 `-a` всё сразу. Опции можно объединять (`-sr`). Ошибки:
 `uname: invalid option -- 'x'`, `uname: extra operand 'foo'`.
+
+**rm** — удаляет файлы; каталог удаляется только с `-r` (вместе со
+всем содержимым); `-f` подавляет ошибку для несуществующих путей.
+Ошибка одного пути не прерывает обработку остальных (код 1). Ошибки:
+`rm: missing operand`, `rm: cannot remove 'x': No such file or
+directory`, `rm: cannot remove 'x': Is a directory`,
+`rm: refusing to remove root directory '/'`,
+`rm: cannot remove 'x': current directory is inside it`.
+
+**mv** — `mv a b` переименовывает (существующий файл `b` заменяется),
+`mv a b c каталог` перемещает источники в существующий каталог.
+При переименовании каталога, содержащего текущий, текущий путь
+и приглашение обновляются. Ошибки: `mv: missing file operand`,
+`mv: missing destination file operand after 'a'`,
+`mv: cannot stat 'x': No such file or directory`,
+`mv: target 'x' is not a directory`,
+`mv: cannot move 'a' to a subdirectory of itself, 'a/b/a'`,
+`mv: 'a' and 'a' are the same file`,
+`mv: cannot move 'a' to 'x/y': No such file or directory`,
+`mv: cannot overwrite directory 'x'`,
+`mv: cannot overwrite non-directory 'f' with directory 'd'`.
+
+`rm` и `mv` меняют только дерево VFS в памяти: архив на диске не
+изменяется, а `vfs-info` показывает хеш исходных данных VFS.
 
 ### Стартовый скрипт
 
@@ -120,6 +148,7 @@ src/emulator/      исходный код
   vfs.py           VFS: загрузка ZIP в память, дерево, пути
   commands.py      реестр команд, exit, conf-dump, vfs-info, clear, uname
   fs_commands.py   команды работы с VFS: ls, cd
+  edit_commands.py команды изменения VFS: rm, mv
   terminal.py      очистка экрана терминала
   errors.py        исключения ShellError и ExitRequest
 tests/             модульные тесты (unittest)
@@ -172,7 +201,8 @@ python scripts/make_vfs.py
 | `scripts/os/test_commands.sh`  | `scripts\os\test_commands.bat`  |
 
 Стартовые скрипты эмулятора (`scripts/startup`): `stage2.txt`,
-`comments_only.txt`, `stage3.txt`, `stage4.txt` — по одному на этап,
+`comments_only.txt`, `stage3.txt`, `stage4.txt`, `stage5.txt` —
+по одному на этап,
 с примерами всех режимов команд и обработки ошибок.
 
 ## 4. Примеры использования
@@ -233,6 +263,23 @@ nixen@Egorei:~$ exit 1 2
 exit: too many arguments
 scripts/startup/stage2.txt:14: error: command exited with status 1
 nixen@Egorei:~$ exit 0
+```
+
+Изменение VFS командами rm и mv (только в памяти):
+
+```
+$ ./run.sh --vfs build/vfs/deep.zip
+nixen@Egorei:~$ rm docs
+rm: cannot remove 'docs': Is a directory
+nixen@Egorei:~$ rm -r docs/notes/archive
+nixen@Egorei:~$ mv README.txt src/lib images
+nixen@Egorei:~$ ls images
+README.txt  lib  logo.bin
+nixen@Egorei:~$ cd docs/notes
+nixen@Egorei:~/docs/notes$ mv /docs /manuals
+nixen@Egorei:~/manuals/notes$ mv todo.txt todo.txt
+mv: 'todo.txt' and 'todo.txt' are the same file
+nixen@Egorei:~/manuals/notes$ exit
 ```
 
 VFS в формате base64 и ошибки загрузки VFS:
