@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Build artifacts and generated VFS archives
+build/
+dist/
+*.zip
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
