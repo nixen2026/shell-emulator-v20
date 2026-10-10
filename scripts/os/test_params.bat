@@ -5,6 +5,8 @@ for %%I in ("%~dp0..\..") do set "ROOT_DIR=%%~fI"
 set "RUN=%ROOT_DIR%\run.bat"
 set "STARTUP=%ROOT_DIR%\scripts\startup"
 
+python "%ROOT_DIR%\scripts\make_vfs.py"
+
 echo === 1. No options: parameters are not set ===
 echo conf-dump| call "%RUN%"
 

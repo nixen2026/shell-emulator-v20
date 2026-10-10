@@ -1,0 +1,21 @@
+# Стартовый скрипт этапа 3: все команды этапов 1-3.
+# Запуск: run.sh --vfs build/vfs/deep.zip --script scripts/startup/stage3.txt
+
+# Служебные команды: параметры эмулятора и информация о VFS
+conf-dump
+vfs-info
+
+# Команды-заглушки (логика ls и cd появится на этапе 4)
+ls
+ls -l docs
+cd docs/notes
+
+# Обработка ошибок
+vfs-info extra        # лишний аргумент
+conf-dump extra       # лишний аргумент
+no-such-command       # неизвестная команда
+exit not-a-number     # нечисловой код выхода
+exit 1 2              # лишний аргумент
+
+# Завершение работы
+exit

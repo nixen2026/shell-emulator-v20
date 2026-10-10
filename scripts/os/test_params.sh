@@ -4,6 +4,8 @@ ROOT_DIR=$(cd "$(dirname "$0")/../.." && pwd)
 RUN="$ROOT_DIR/run.sh"
 STARTUP="$ROOT_DIR/scripts/startup"
 
+"${PYTHON:-python3}" "$ROOT_DIR/scripts/make_vfs.py"
+
 echo "=== 1. No options: parameters are not set ==="
 echo "conf-dump" | "$RUN"
 

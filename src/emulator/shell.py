@@ -8,6 +8,7 @@ from emulator.commands import COMMANDS
 from emulator.config import Config
 from emulator.errors import ExitRequest, ShellError
 from emulator.parser import parse_line
+from emulator.vfs import Vfs
 
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
@@ -26,12 +27,13 @@ def get_username():
 class Shell:
     """Состояние и цикл работы эмулятора оболочки."""
 
-    def __init__(self, config=None, out=None, err=None):
-        """Создать эмулятор с настройками ``config``.
+    def __init__(self, config=None, vfs=None, out=None, err=None):
+        """Создать эмулятор с настройками ``config`` и VFS ``vfs``.
 
         Вывод пишется в поток ``out``, ошибки — в поток ``err``.
         """
         self.config = config or Config()
+        self.vfs = vfs or Vfs()
         self.out = out or sys.stdout
         self.err = err or sys.stderr
         self.username = get_username()
@@ -75,11 +77,6 @@ class Shell:
             self.running = False
             self.exit_code = request.code
         return self.status
-
-    def print_debug_config(self):
-        """Отладочный вывод всех параметров, заданных при запуске."""
-        for line in self.config.dump():
-            self.write(f"[debug] {line}")
 
     def run_script(self, path):
         """Выполнить стартовый скрипт, имитируя диалог с пользователем.

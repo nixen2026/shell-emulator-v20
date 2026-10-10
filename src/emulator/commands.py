@@ -55,9 +55,19 @@ def cmd_conf_dump(shell, args):
         shell.write(line)
 
 
+def cmd_vfs_info(shell, args):
+    """Служебная команда: вывести имя VFS и хеш SHA-256 её данных."""
+    require_no_args("vfs-info", args)
+    if not shell.vfs.loaded:
+        raise ShellError("vfs-info: VFS is not loaded")
+    shell.write(f"name: {shell.vfs.name}")
+    shell.write(f"sha256: {shell.vfs.sha256}")
+
+
 COMMANDS = {
     "ls": cmd_ls,
     "cd": cmd_cd,
     "exit": cmd_exit,
     "conf-dump": cmd_conf_dump,
+    "vfs-info": cmd_vfs_info,
 }
