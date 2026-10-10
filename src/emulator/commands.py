@@ -10,6 +10,12 @@ from emulator.errors import ExitRequest, ShellError
 MAX_EXIT_ARGS = 1
 
 
+def require_no_args(name, args):
+    """Сообщить об ошибке, если команде переданы аргументы."""
+    if args:
+        raise ShellError(f"{name}: too many arguments")
+
+
 def format_stub(name, args):
     """Сформировать вывод команды-заглушки: имя и список аргументов."""
     return f"{name}: args={args!r}"
@@ -42,8 +48,16 @@ def cmd_exit(shell, args):
     raise ExitRequest(code)
 
 
+def cmd_conf_dump(shell, args):
+    """Служебная команда: вывести параметры эмулятора (ключ=значение)."""
+    require_no_args("conf-dump", args)
+    for line in shell.config.dump():
+        shell.write(line)
+
+
 COMMANDS = {
     "ls": cmd_ls,
     "cd": cmd_cd,
     "exit": cmd_exit,
+    "conf-dump": cmd_conf_dump,
 }
